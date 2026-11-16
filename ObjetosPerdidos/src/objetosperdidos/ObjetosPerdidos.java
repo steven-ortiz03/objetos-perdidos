@@ -1,19 +1,18 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Main.java to edit this template
- */
-
 package objetosperdidos;
 
+import javax.swing.SwingUtilities;
+import objetosperdidos.util.Tema;
+import objetosperdidos.view.FrmLogin;
+
 /**
- * @author Usuario
+ * Punto de entrada del Sistema de Objetos Perdidos y Encontrados.
+ * La base de datos SQLite se crea sola la primera vez (ver ConexionBD).
  */
 public class ObjetosPerdidos {
 
-  /**
-   * @param args the command line arguments
-   */
-  public static void main(String[] args) {
-    // TODO code application logic here
-  }
+    public static void main(String[] args) {
+        Tema.aplicarLookAndFeel();
+        // Las ventanas de Swing deben crearse en el hilo de la interfaz gráfica
+        SwingUtilities.invokeLater(() -> new FrmLogin().setVisible(true));
+    }
 }
