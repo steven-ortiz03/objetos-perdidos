@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     id_usuario           INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre               TEXT    NOT NULL,
     correo               TEXT    NOT NULL UNIQUE,
-    codigo_institucional TEXT    NOT NULL UNIQUE,
+    cedula TEXT    NOT NULL UNIQUE,
     password_hash        TEXT    NOT NULL,
     salt                 TEXT    NOT NULL,
     rol                  TEXT    NOT NULL
