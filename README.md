@@ -142,13 +142,16 @@ conexión, porque SQLite trae las claves foráneas apagadas por defecto.
 
 Las fechas se guardan como texto `AAAA-MM-DD`; la fecha de entrega es la del día en que se registra.
 
-## Requisitos cubiertos
+## Estado de los requisitos
 
-Implementados: RF-01 a RF-20 y RNF-01 a RNF-12 del documento de requisitos.
-
-Pendientes (prioridad Baja): RF-21 (administrar categorías y lugares desde la aplicación; por ahora se
-agregan en `src/db/datos_iniciales.sql` antes de crear la base) y RF-22 (crear administradores desde la
-aplicación; por ahora se agregan en el mismo script).
+| Requisito | Estado |
+|---|---|
+| RF-01 a RF-21 | Implementados. La sección 14 del informe técnico detalla las comprobaciones realizadas y las pruebas de interfaz pendientes. |
+| RF-22 | Cumplimiento parcial. El sistema valida los campos obligatorios y advierte si detecta un posible duplicado. El administrador puede confirmar el registro. |
+| RF-23 y RF-24 | Pendientes. Las categorías, los lugares y las cuentas de administrador se cargan mediante el script de datos iniciales. |
+| RF-25 y RF-26 | Pendientes. Cambio de la contraseña propia y restablecimiento de la contraseña de un estudiante por un administrador. |
+| RNF-07 | La medición reportada con 500 objetos fue de 5 a 6 segundos. La meta de menos de 3 segundos sigue sin cumplirse según esa medición. |
+| RNF-10 | Queda pendiente documentar la ejecución de la interfaz en Windows, Linux y macOS. |
 
 ## Problemas frecuentes
 
