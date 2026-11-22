@@ -1,19 +1,10 @@
 package objetosperdidos.view;
 
-import java.awt.BorderLayout;
 import java.awt.CardLayout;
-import java.awt.Component;
 import java.awt.Dimension;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import objetosperdidos.controller.AuthController;
 import objetosperdidos.model.Usuario;
@@ -21,107 +12,83 @@ import objetosperdidos.util.Sesion;
 import objetosperdidos.util.Tema;
 
 /**
- * Ventana principal: menú lateral a la izquierda y, en el centro,
- * un panel que cambia según la opción elegida (CardLayout).
- * Las opciones del menú dependen del rol del usuario (RF-04).
+ * Ventana principal de toda la aplicación: menú lateral a la izquierda y, en el centro,
+ * un panel que cambia según la opción elegida (CardLayout). Las opciones del menú dependen
+ * del rol del usuario (RF-04).
+ *
+ * ESTA VENTANA SE EDITA CON EL DISEÑADOR DE NETBEANS: abre el archivo y pulsa "Design".
+ * Allí puedes cambiar colores, textos, fuentes y tamaño del menú (pnlMenu) y el fondo del
+ * área central (pnlContenido). Las pantallas (Inicio, Catálogo, Gestión, Historial) se
+ * insertan dentro de pnlContenido al abrir la ventana.
  */
-public class FrmPrincipal extends JFrame {
+public class FrmPrincipal extends javax.swing.JFrame {
+
+    // Nombres internos de cada pantalla (no dependen del texto de los botones)
+    private static final String INICIO = "inicio";
+    private static final String CATALOGO = "catalogo";
+    private static final String GESTION = "gestion";
+    private static final String HISTORIAL = "historial";
 
     private final AuthController authController = new AuthController();
-
     private final CardLayout tarjetas = new CardLayout();
-    private final JPanel pnlCentro = new JPanel(tarjetas);
-    private final JPanel pnlMenu = new JPanel();
 
-    // Relaciona el nombre de cada opción con su panel y con su botón del menú
-    private final Map<String, Recargable> paneles = new HashMap<>();
-    private final List<JButton> botonesMenu = new ArrayList<>();
+    // Relaciona cada pantalla con su panel y con su botón del menú
+    private final Map<String, Recargable> paneles = new LinkedHashMap<>();
+    private final Map<String, JButton> botonesMenu = new LinkedHashMap<>();
 
     public FrmPrincipal() {
-        setTitle("Sistema de Objetos Perdidos y Encontrados");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        initComponents();
         setSize(1180, 720);
         setMinimumSize(new Dimension(980, 600));
         setLocationRelativeTo(null);
-        construirInterfaz();
-        mostrar("Inicio");
+        // Sin sesión iniciada (por ejemplo, al abrir la ventana sola para ver el diseño)
+        // solo se muestra el diseño vacío.
+        if (Sesion.getUsuario() != null) {
+            configurarSegunUsuario();
+            mostrar(INICIO);
+        }
     }
 
-    private void construirInterfaz() {
+    /** Pone el nombre y rol del usuario, arma las pantallas y oculta lo que su rol no permite. */
+    private void configurarSegunUsuario() {
         Usuario usuario = Sesion.getUsuario();
+        lblUsuario.setText(usuario.getNombre());
+        lblRol.setText(usuario.getNombreRol());
 
-        // ----- Menú lateral -----
-        pnlMenu.setLayout(new BoxLayout(pnlMenu, BoxLayout.Y_AXIS));
-        pnlMenu.setBackground(Tema.AZUL);
-        pnlMenu.setBorder(BorderFactory.createEmptyBorder(22, 14, 18, 14));
-        pnlMenu.setPreferredSize(new Dimension(230, 0));
-
-        JLabel lblApp = new JLabel("Objetos Perdidos");
-        lblApp.setFont(Tema.FUENTE_TITULO.deriveFont(19f));
-        lblApp.setForeground(Tema.BLANCO);
-        lblApp.setAlignmentX(Component.LEFT_ALIGNMENT);
-        pnlMenu.add(lblApp);
-
-        JLabel lblUsuario = new JLabel(usuario.getNombre());
-        lblUsuario.setForeground(Tema.BLANCO);
-        lblUsuario.setAlignmentX(Component.LEFT_ALIGNMENT);
-        JLabel lblRol = new JLabel(usuario.getNombreRol());
-        lblRol.setFont(Tema.FUENTE_PEQUENA);
-        lblRol.setForeground(Tema.TURQUESA);
-        lblRol.setAlignmentX(Component.LEFT_ALIGNMENT);
-        pnlMenu.add(Box.createVerticalStrut(14));
-        pnlMenu.add(lblUsuario);
-        pnlMenu.add(lblRol);
-        pnlMenu.add(Box.createVerticalStrut(24));
-
-        // ----- Paneles disponibles para todos -----
-        agregarOpcion("Inicio", new PnlInicio());
-        agregarOpcion("Catálogo", new PnlCatalogo());
-
-        // ----- Paneles solo para quien puede gestionar objetos -----
-        if (usuario.puedeGestionarObjetos()) {
-            agregarOpcion("Gestión de objetos", new PnlGestionObjetos());
-            agregarOpcion("Historial de entregas", new PnlHistorial());
+        // Aspecto de los botones del menú (respeta los colores del diseñador)
+        for (JButton boton : new JButton[]{btnInicio, btnCatalogo, btnGestion, btnHistorial, btnSalir}) {
+            Tema.estilizarBotonMenu(boton);
         }
 
-        pnlMenu.add(Box.createVerticalGlue()); // empuja "Cerrar sesión" hacia abajo
-        JButton btnSalir = crearBotonMenu("Cerrar sesión");
-        btnSalir.addActionListener(e -> cerrarSesion());
-        pnlMenu.add(btnSalir);
+        // El área central cambia de pantalla con un CardLayout
+        pnlContenido.setLayout(tarjetas);
+        agregarPantalla(INICIO, new PnlInicio(), btnInicio);
+        agregarPantalla(CATALOGO, new PnlCatalogo(), btnCatalogo);
 
-        pnlCentro.setBackground(Tema.FONDO);
-        getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(pnlMenu, BorderLayout.WEST);
-        getContentPane().add(pnlCentro, BorderLayout.CENTER);
+        // Solo quien puede gestionar objetos ve estas dos opciones
+        boolean puedeGestionar = usuario.puedeGestionarObjetos();
+        btnGestion.setVisible(puedeGestionar);
+        btnHistorial.setVisible(puedeGestionar);
+        if (puedeGestionar) {
+            agregarPantalla(GESTION, new PnlGestionObjetos(), btnGestion);
+            agregarPantalla(HISTORIAL, new PnlHistorial(), btnHistorial);
+        }
     }
 
-    /** Agrega un panel al centro y su botón correspondiente al menú. */
-    private void agregarOpcion(String nombre, JPanel panel) {
+    private void agregarPantalla(String nombre, JPanel panel, JButton boton) {
         paneles.put(nombre, (Recargable) panel);
-        pnlCentro.add(panel, nombre);
-
-        JButton boton = crearBotonMenu(nombre);
-        boton.addActionListener(e -> mostrar(nombre));
-        botonesMenu.add(boton);
-        pnlMenu.add(boton);
-        pnlMenu.add(Box.createVerticalStrut(6));
+        botonesMenu.put(nombre, boton);
+        pnlContenido.add(panel, nombre);
     }
 
-    private JButton crearBotonMenu(String texto) {
-        JButton boton = Tema.botonMenu(texto);
-        boton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
-        boton.setAlignmentX(Component.LEFT_ALIGNMENT);
-        return boton;
-    }
-
-    /** Muestra el panel elegido, actualiza sus datos y resalta su botón. */
+    /** Muestra la pantalla elegida, actualiza sus datos y resalta su botón. */
     private void mostrar(String nombre) {
-        tarjetas.show(pnlCentro, nombre);
+        tarjetas.show(pnlContenido, nombre);
         paneles.get(nombre).recargar();
-        for (JButton boton : botonesMenu) {
-            boolean seleccionado = boton.getText().equals(nombre);
-            boton.setBackground(seleccionado ? Tema.AZUL_CLARO : Tema.AZUL);
-            boton.setFont(seleccionado ? Tema.FUENTE_NEGRITA : Tema.FUENTE);
+        for (Map.Entry<String, JButton> entrada : botonesMenu.entrySet()) {
+            boolean seleccionado = entrada.getKey().equals(nombre);
+            entrada.getValue().setBackground(seleccionado ? Tema.AZUL_CLARO : Tema.AZUL);
+            entrada.getValue().setFont(seleccionado ? Tema.FUENTE_NEGRITA : Tema.FUENTE);
         }
     }
 
@@ -132,4 +99,207 @@ public class FrmPrincipal extends JFrame {
             dispose();
         }
     }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        pnlMenu = new javax.swing.JPanel();
+        lblApp = new javax.swing.JLabel();
+        lblUsuario = new javax.swing.JLabel();
+        lblRol = new javax.swing.JLabel();
+        btnInicio = new javax.swing.JButton();
+        btnCatalogo = new javax.swing.JButton();
+        btnGestion = new javax.swing.JButton();
+        btnHistorial = new javax.swing.JButton();
+        btnSalir = new javax.swing.JButton();
+        pnlContenido = new javax.swing.JPanel();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Sistema de Objetos Perdidos y Encontrados");
+
+        pnlMenu.setBackground(new java.awt.Color(30, 58, 95));
+
+        lblApp.setFont(new java.awt.Font("Segoe UI", 1, 19)); // NOI18N
+        lblApp.setForeground(new java.awt.Color(255, 255, 255));
+        lblApp.setText("Objetos Perdidos");
+
+        lblUsuario.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        lblUsuario.setForeground(new java.awt.Color(255, 255, 255));
+        lblUsuario.setText("Nombre del usuario");
+
+        lblRol.setFont(new java.awt.Font("Segoe UI", 0, 12)); // NOI18N
+        lblRol.setForeground(new java.awt.Color(20, 184, 166));
+        lblRol.setText("Rol");
+
+        btnInicio.setBackground(new java.awt.Color(30, 58, 95));
+        btnInicio.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnInicio.setForeground(new java.awt.Color(255, 255, 255));
+        btnInicio.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        btnInicio.setText("Inicio");
+        btnInicio.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnInicioActionPerformed(evt);
+            }
+        });
+
+        btnCatalogo.setBackground(new java.awt.Color(30, 58, 95));
+        btnCatalogo.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnCatalogo.setForeground(new java.awt.Color(255, 255, 255));
+        btnCatalogo.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        btnCatalogo.setText("Catálogo");
+        btnCatalogo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCatalogoActionPerformed(evt);
+            }
+        });
+
+        btnGestion.setBackground(new java.awt.Color(30, 58, 95));
+        btnGestion.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnGestion.setForeground(new java.awt.Color(255, 255, 255));
+        btnGestion.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        btnGestion.setText("Gestión de objetos");
+        btnGestion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGestionActionPerformed(evt);
+            }
+        });
+
+        btnHistorial.setBackground(new java.awt.Color(30, 58, 95));
+        btnHistorial.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnHistorial.setForeground(new java.awt.Color(255, 255, 255));
+        btnHistorial.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        btnHistorial.setText("Historial de entregas");
+        btnHistorial.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnHistorialActionPerformed(evt);
+            }
+        });
+
+        btnSalir.setBackground(new java.awt.Color(30, 58, 95));
+        btnSalir.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        btnSalir.setForeground(new java.awt.Color(255, 255, 255));
+        btnSalir.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        btnSalir.setText("Cerrar sesión");
+        btnSalir.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSalirActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout pnlMenuLayout = new javax.swing.GroupLayout(pnlMenu);
+        pnlMenu.setLayout(pnlMenuLayout);
+        pnlMenuLayout.setHorizontalGroup(
+            pnlMenuLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pnlMenuLayout.createSequentialGroup()
+                .addGap(14, 14, 14)
+                .addGroup(pnlMenuLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(lblApp)
+                    .addComponent(lblUsuario)
+                    .addComponent(lblRol)
+                    .addComponent(btnInicio, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnCatalogo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnGestion, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnHistorial, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(btnSalir, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(14, 14, 14))
+        );
+        pnlMenuLayout.setVerticalGroup(
+            pnlMenuLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pnlMenuLayout.createSequentialGroup()
+                .addGap(22, 22, 22)
+                .addComponent(lblApp)
+                .addGap(14, 14, 14)
+                .addComponent(lblUsuario)
+                .addComponent(lblRol)
+                .addGap(24, 24, 24)
+                .addComponent(btnInicio, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(6, 6, 6)
+                .addComponent(btnCatalogo, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(6, 6, 6)
+                .addComponent(btnGestion, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(6, 6, 6)
+                .addComponent(btnHistorial, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(100, 100, Short.MAX_VALUE)
+                .addComponent(btnSalir, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18))
+        );
+
+        pnlContenido.setBackground(new java.awt.Color(245, 247, 250));
+
+        javax.swing.GroupLayout pnlContenidoLayout = new javax.swing.GroupLayout(pnlContenido);
+        pnlContenido.setLayout(pnlContenidoLayout);
+        pnlContenidoLayout.setHorizontalGroup(
+            pnlContenidoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 900, Short.MAX_VALUE)
+        );
+        pnlContenidoLayout.setVerticalGroup(
+            pnlContenidoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 640, Short.MAX_VALUE)
+        );
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(pnlMenu, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(pnlContenido, javax.swing.GroupLayout.DEFAULT_SIZE, 900, Short.MAX_VALUE))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(pnlMenu, javax.swing.GroupLayout.DEFAULT_SIZE, 640, Short.MAX_VALUE)
+            .addComponent(pnlContenido, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void btnInicioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnInicioActionPerformed
+        mostrar(INICIO);
+    }//GEN-LAST:event_btnInicioActionPerformed
+
+    private void btnCatalogoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCatalogoActionPerformed
+        mostrar(CATALOGO);
+    }//GEN-LAST:event_btnCatalogoActionPerformed
+
+    private void btnGestionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGestionActionPerformed
+        mostrar(GESTION);
+    }//GEN-LAST:event_btnGestionActionPerformed
+
+    private void btnHistorialActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHistorialActionPerformed
+        mostrar(HISTORIAL);
+    }//GEN-LAST:event_btnHistorialActionPerformed
+
+    private void btnSalirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSalirActionPerformed
+        cerrarSesion();
+    }//GEN-LAST:event_btnSalirActionPerformed
+
+    /** Permite ejecutar solo esta ventana para ver su diseño (sin sesión, el centro queda vacío). */
+    public static void main(String[] args) {
+        objetosperdidos.util.Tema.aplicarLookAndFeel();
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new FrmPrincipal().setVisible(true);
+            }
+        });
+    }
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnCatalogo;
+    private javax.swing.JButton btnGestion;
+    private javax.swing.JButton btnHistorial;
+    private javax.swing.JButton btnInicio;
+    private javax.swing.JButton btnSalir;
+    private javax.swing.JLabel lblApp;
+    private javax.swing.JLabel lblRol;
+    private javax.swing.JLabel lblUsuario;
+    private javax.swing.JPanel pnlContenido;
+    private javax.swing.JPanel pnlMenu;
+    // End of variables declaration//GEN-END:variables
 }

@@ -11,6 +11,33 @@ Software Orientado a Objetos (Parcial 3).
 **No necesita instalar nada más:** la base de datos es SQLite (un archivo local) y su controlador ya viene
 en `ObjetosPerdidos/lib/`. La base se crea sola la primera vez que se abre la aplicación.
 
+## Editar el diseño de las ventanas en NetBeans
+
+Todas las ventanas y pantallas están hechas con el diseñador visual (cada una tiene su `.java` y su `.form`
+en `src/objetosperdidos/view`):
+
+| Archivo | Tipo | Qué es |
+|---|---|---|
+| `FrmLogin` | JFrame | Inicio de sesión |
+| `FrmRegistroEstudiante` | JFrame | Registro de estudiante |
+| `FrmPrincipal` | JFrame | Ventana principal: menú (`pnlMenu`) y área central (`pnlContenido`) |
+| `FrmObjeto` | JFrame | Registrar o editar un objeto |
+| `FrmEntrega` | JFrame | Registrar la entrega de un objeto |
+| `FrmDetalleObjeto` | JFrame | Ficha de un objeto |
+| `PnlInicio`, `PnlCatalogo`, `PnlGestionObjetos`, `PnlHistorial` | JPanel | Pantallas que se muestran dentro de `FrmPrincipal` |
+
+1. Abre el archivo en NetBeans y pulsa **Design** en la parte superior del editor.
+2. Arrastra componentes desde la paleta, muévelos o cambia sus propiedades (texto, color, fuente).
+   Para programar un botón: clic derecho > *Events* > *Action* > *actionPerformed*.
+3. Para ver solo una ventana (JFrame): clic derecho en el archivo > *Run File* (Shift+F6).
+
+No edites la sección gris "Generated Code": la escribe NetBeans. La lógica va fuera de ella.
+No cambies el nombre de variable de los componentes existentes (`txtNombre`, `btnGuardar`...), porque el código los usa.
+Las tarjetas del catálogo (`TarjetaObjeto`) y el contenido de las tablas se llenan por código.
+
+Nota: el registro de estudiantes usa la **cédula** (6 a 10 dígitos, solo números) como identificador único.
+Si ya tenías una base `data/objetos_perdidos.db` creada antes, la aplicación la actualiza sola al abrirse.
+
 ## Requisitos
 
 | Herramienta | Versión |

@@ -11,7 +11,7 @@ public abstract class Usuario {
     private int id;
     private String nombre;
     private String correo;
-    private String codigoInstitucional;
+    private String cedula;
     private String passwordHash;
     private String salt;
     private boolean activo = true;
@@ -62,12 +62,12 @@ public abstract class Usuario {
         this.correo = correo;
     }
 
-    public String getCodigoInstitucional() {
-        return codigoInstitucional;
+    public String getCedula() {
+        return cedula;
     }
 
-    public void setCodigoInstitucional(String codigoInstitucional) {
-        this.codigoInstitucional = codigoInstitucional;
+    public void setCedula(String cedula) {
+        this.cedula = cedula;
     }
 
     public String getPasswordHash() {

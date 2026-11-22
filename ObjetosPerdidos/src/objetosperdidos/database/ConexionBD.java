@@ -58,9 +58,32 @@ public class ConexionBD {
         try (Connection conexion = abrir()) {
             if (!existeTablaUsuarios(conexion)) {
                 ejecutarScripts(conexion);
+            } else {
+                migrarCedula(conexion);
             }
         }
         preparada = true;
+    }
+
+    /**
+     * Las bases creadas con versiones anteriores tenían la columna "codigo_institucional".
+     * Se renombra a "cedula" para no perder los usuarios ya registrados.
+     */
+    private static void migrarCedula(Connection conexion) throws SQLException {
+        boolean columnaVieja = false;
+        try (Statement sentencia = conexion.createStatement();
+             ResultSet columnas = sentencia.executeQuery("PRAGMA table_info(usuarios)")) {
+            while (columnas.next()) {
+                if ("codigo_institucional".equals(columnas.getString("name"))) {
+                    columnaVieja = true;
+                }
+            }
+        }
+        if (columnaVieja) {
+            try (Statement sentencia = conexion.createStatement()) {
+                sentencia.execute("ALTER TABLE usuarios RENAME COLUMN codigo_institucional TO cedula");
+            }
+        }
     }
 
     private static boolean existeTablaUsuarios(Connection conexion) throws SQLException {

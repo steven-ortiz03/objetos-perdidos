@@ -17,6 +17,11 @@ public class Validador {
         return documento != null && documento.matches("^[0-9A-Za-z-]{5,20}$");
     }
 
+    /** Cédula de ciudadanía: solo números, entre 6 y 10 dígitos. */
+    public static boolean esCedulaValida(String cedula) {
+        return cedula != null && cedula.matches("^[0-9]{6,10}$");
+    }
+
     /** Lanza un error si el campo obligatorio está vacío. */
     public static void exigir(String valor, String nombreCampo) throws ValidacionException {
         if (estaVacio(valor)) {

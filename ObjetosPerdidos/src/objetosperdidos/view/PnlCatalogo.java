@@ -1,8 +1,6 @@
 package objetosperdidos.view;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -10,30 +8,26 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.util.List;
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingUtilities;
 import objetosperdidos.controller.ObjetoController;
 import objetosperdidos.model.Categoria;
 import objetosperdidos.model.EstadoObjeto;
 import objetosperdidos.model.FiltroObjeto;
 import objetosperdidos.model.Lugar;
 import objetosperdidos.model.ObjetoPerdido;
+import objetosperdidos.util.FechaUtil;
 import objetosperdidos.util.Tema;
 
 /**
  * Catálogo de objetos encontrados con buscador y filtros (CU-06, CU-07).
- * Lo usan tanto los estudiantes como los administradores.
+ * Es un panel que se muestra dentro de la ventana principal; lo usan estudiantes y administradores.
+ *
+ * SE EDITA CON EL DISEÑADOR DE NETBEANS: abre el archivo y pulsa "Design". No modifiques la
+ * sección "Generated Code"; la lógica va fuera de ella.
+ * Las tarjetas de los objetos se crean por código dentro de pnlLista (ver TarjetaObjeto).
  */
-public class PnlCatalogo extends JPanel implements Recargable {
+public class PnlCatalogo extends javax.swing.JPanel implements Recargable {
 
     private static final String TODAS = "Todas las categorías";
     private static final String TODOS_LUGARES = "Todos los lugares";
@@ -42,40 +36,34 @@ public class PnlCatalogo extends JPanel implements Recargable {
 
     private final ObjetoController objetoController = new ObjetoController();
 
-    private final JTextField txtBuscar = new JTextField(20);
-    private final JComboBox<Object> cmbCategoria = new JComboBox<>();
-    private final JComboBox<Object> cmbLugar = new JComboBox<>();
-    private final JComboBox<Object> cmbEstado = new JComboBox<>();
-    private final JCheckBox chkFechas = new JCheckBox("Filtrar por fecha encontrada:");
-    private final SelectorFecha fechaDesde = new SelectorFecha();
-    private final SelectorFecha fechaHasta = new SelectorFecha();
-    private final JLabel lblResultado = new JLabel(" ");
-
+    // Rejilla donde se acomodan las tarjetas; va dentro de pnlLista
     private final GridLayout rejilla = new GridLayout(0, 4, 15, 15);
     private final JPanel pnlTarjetas = new JPanel(rejilla);
-    private final JScrollPane scroll;
 
     public PnlCatalogo() {
-        setLayout(new BorderLayout(0, 12));
-        setBackground(Tema.FONDO);
-        setBorder(BorderFactory.createEmptyBorder(22, 26, 18, 26));
+        initComponents();
+        Tema.estilizarBoton(btnBuscar);
+        Tema.estilizarBoton(btnLimpiar);
 
-        add(construirFiltros(), BorderLayout.NORTH);
+        cmbEstado.addItem(TODOS_ESTADOS);
+        cmbEstado.addItem(EstadoObjeto.DISPONIBLE);
+        cmbEstado.addItem(EstadoObjeto.ENTREGADO);
 
-        // Las tarjetas van arriba de un panel contenedor para que no se estiren hacia abajo
+        FechaUtil.configurar(spnDesde);
+        FechaUtil.configurar(spnHasta);
+        FechaUtil.poner(spnDesde, LocalDate.now().minusMonths(1));
+        activarFechas();
+
+        // Las tarjetas van en la parte de arriba de pnlLista para que no se estiren hacia abajo
         pnlTarjetas.setOpaque(false);
-        JPanel contenedor = new JPanel(new BorderLayout());
-        contenedor.setBackground(Tema.FONDO);
-        contenedor.add(pnlTarjetas, BorderLayout.NORTH);
-
-        scroll = new JScrollPane(contenedor);
-        scroll.setBorder(null);
-        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scroll.getVerticalScrollBar().setUnitIncrement(18);
-        add(scroll, BorderLayout.CENTER);
+        pnlLista.setLayout(new BorderLayout());
+        pnlLista.add(pnlTarjetas, BorderLayout.NORTH);
+        scrollTarjetas.setBorder(null);
+        scrollTarjetas.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollTarjetas.getVerticalScrollBar().setUnitIncrement(18);
 
         // Al cambiar el tamaño de la ventana se ajusta el número de columnas
-        scroll.getViewport().addComponentListener(new ComponentAdapter() {
+        scrollTarjetas.getViewport().addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
                 ajustarColumnas();
@@ -83,61 +71,10 @@ public class PnlCatalogo extends JPanel implements Recargable {
         });
     }
 
-    private JPanel construirFiltros() {
-        JPanel filtros = new JPanel();
-        filtros.setLayout(new BoxLayout(filtros, BoxLayout.Y_AXIS));
-        filtros.setOpaque(false);
-
-        JPanel filaTitulo = new JPanel(new BorderLayout());
-        filaTitulo.setOpaque(false);
-        filaTitulo.add(Tema.titulo("Catálogo de objetos encontrados"), BorderLayout.WEST);
-        lblResultado.setForeground(Tema.GRIS);
-        filaTitulo.add(lblResultado, BorderLayout.EAST);
-
-        // Fila 1: palabra clave y listas
-        JPanel fila1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
-        fila1.setOpaque(false);
-        txtBuscar.setPreferredSize(new Dimension(220, 34));
-        txtBuscar.setToolTipText("Palabra clave en el nombre o la descripción");
-        cmbEstado.addItem(TODOS_ESTADOS);
-        cmbEstado.addItem(EstadoObjeto.DISPONIBLE);
-        cmbEstado.addItem(EstadoObjeto.ENTREGADO);
-        fila1.add(new JLabel("Buscar:"));
-        fila1.add(txtBuscar);
-        fila1.add(cmbCategoria);
-        fila1.add(cmbLugar);
-        fila1.add(cmbEstado);
-
-        // Fila 2: rango de fechas y botones
-        JPanel fila2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
-        fila2.setOpaque(false);
-        chkFechas.setOpaque(false);
-        fechaDesde.setFecha(LocalDate.now().minusMonths(1));
-        fechaDesde.setEnabled(false);
-        fechaHasta.setEnabled(false);
-        JButton btnBuscar = Tema.botonPrimario("Buscar");
-        JButton btnLimpiar = Tema.botonSecundario("Limpiar filtros");
-        fila2.add(chkFechas);
-        fila2.add(new JLabel("desde"));
-        fila2.add(fechaDesde);
-        fila2.add(new JLabel("hasta"));
-        fila2.add(fechaHasta);
-        fila2.add(btnBuscar);
-        fila2.add(btnLimpiar);
-
-        filtros.add(filaTitulo);
-        filtros.add(fila1);
-        filtros.add(fila2);
-
-        // Acciones
-        chkFechas.addActionListener(e -> {
-            fechaDesde.setEnabled(chkFechas.isSelected());
-            fechaHasta.setEnabled(chkFechas.isSelected());
-        });
-        btnBuscar.addActionListener(e -> buscar());
-        txtBuscar.addActionListener(e -> buscar()); // Enter en el campo de texto
-        btnLimpiar.addActionListener(e -> limpiarFiltros());
-        return filtros;
+    /** Las fechas solo se pueden cambiar si la casilla está marcada. */
+    private void activarFechas() {
+        spnDesde.setEnabled(chkFechas.isSelected());
+        spnHasta.setEnabled(chkFechas.isSelected());
     }
 
     /** Se ejecuta cada vez que se abre el catálogo desde el menú. */
@@ -189,8 +126,8 @@ public class PnlCatalogo extends JPanel implements Recargable {
             filtro.setEstado((EstadoObjeto) cmbEstado.getSelectedItem());
         }
         if (chkFechas.isSelected()) {
-            filtro.setDesde(fechaDesde.getFecha());
-            filtro.setHasta(fechaHasta.getFecha());
+            filtro.setDesde(FechaUtil.leer(spnDesde));
+            filtro.setHasta(FechaUtil.leer(spnHasta));
         }
 
         try {
@@ -208,7 +145,7 @@ public class PnlCatalogo extends JPanel implements Recargable {
             tarjeta.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    abrirDetalle(objeto);
+                    Ventanas.abrirSobre(PnlCatalogo.this, new FrmDetalleObjeto(objeto), null);
                 }
             });
             pnlTarjetas.add(tarjeta);
@@ -225,16 +162,12 @@ public class PnlCatalogo extends JPanel implements Recargable {
 
     /** Calcula cuántas tarjetas caben por fila según el ancho disponible. */
     private void ajustarColumnas() {
-        int ancho = scroll.getViewport().getWidth();
+        int ancho = scrollTarjetas.getViewport().getWidth();
         int columnas = Math.max(1, ancho / ANCHO_TARJETA);
         if (rejilla.getColumns() != columnas) {
             rejilla.setColumns(columnas);
             pnlTarjetas.revalidate();
         }
-    }
-
-    private void abrirDetalle(ObjetoPerdido objeto) {
-        new DlgDetalleObjeto(SwingUtilities.getWindowAncestor(this), objeto).setVisible(true);
     }
 
     private void limpiarFiltros() {
@@ -243,8 +176,210 @@ public class PnlCatalogo extends JPanel implements Recargable {
         cmbLugar.setSelectedIndex(0);
         cmbEstado.setSelectedIndex(0);
         chkFechas.setSelected(false);
-        fechaDesde.setEnabled(false);
-        fechaHasta.setEnabled(false);
+        activarFechas();
         buscar();
     }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        lblTitulo = new javax.swing.JLabel();
+        lblResultado = new javax.swing.JLabel();
+        lblBuscar = new javax.swing.JLabel();
+        txtBuscar = new javax.swing.JTextField();
+        cmbCategoria = new javax.swing.JComboBox<>();
+        cmbLugar = new javax.swing.JComboBox<>();
+        cmbEstado = new javax.swing.JComboBox<>();
+        chkFechas = new javax.swing.JCheckBox();
+        lblDesde = new javax.swing.JLabel();
+        spnDesde = new javax.swing.JSpinner();
+        lblHasta = new javax.swing.JLabel();
+        spnHasta = new javax.swing.JSpinner();
+        btnBuscar = new javax.swing.JButton();
+        btnLimpiar = new javax.swing.JButton();
+        scrollTarjetas = new javax.swing.JScrollPane();
+        pnlLista = new javax.swing.JPanel();
+
+        setBackground(new java.awt.Color(245, 247, 250));
+
+        lblTitulo.setFont(new java.awt.Font("Segoe UI", 1, 22)); // NOI18N
+        lblTitulo.setForeground(new java.awt.Color(30, 58, 95));
+        lblTitulo.setText("Catálogo de objetos encontrados");
+
+        lblResultado.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        lblResultado.setForeground(new java.awt.Color(107, 114, 128));
+        lblResultado.setText("0 objeto(s) encontrado(s)");
+
+        lblBuscar.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        lblBuscar.setForeground(new java.awt.Color(31, 41, 55));
+        lblBuscar.setText("Buscar:");
+
+        txtBuscar.setToolTipText("Palabra clave en el nombre o la descripción");
+        txtBuscar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtBuscarActionPerformed(evt);
+            }
+        });
+
+        chkFechas.setBackground(new java.awt.Color(245, 247, 250));
+        chkFechas.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        chkFechas.setForeground(new java.awt.Color(31, 41, 55));
+        chkFechas.setText("Filtrar por fecha encontrada:");
+        chkFechas.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                chkFechasActionPerformed(evt);
+            }
+        });
+
+        lblDesde.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        lblDesde.setForeground(new java.awt.Color(31, 41, 55));
+        lblDesde.setText("desde");
+
+        lblHasta.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        lblHasta.setForeground(new java.awt.Color(31, 41, 55));
+        lblHasta.setText("hasta");
+
+        btnBuscar.setBackground(new java.awt.Color(30, 58, 95));
+        btnBuscar.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        btnBuscar.setForeground(new java.awt.Color(255, 255, 255));
+        btnBuscar.setText("Buscar");
+        btnBuscar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnBuscarActionPerformed(evt);
+            }
+        });
+
+        btnLimpiar.setBackground(new java.awt.Color(255, 255, 255));
+        btnLimpiar.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        btnLimpiar.setForeground(new java.awt.Color(31, 41, 55));
+        btnLimpiar.setText("Limpiar filtros");
+        btnLimpiar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnLimpiarActionPerformed(evt);
+            }
+        });
+
+        pnlLista.setBackground(new java.awt.Color(245, 247, 250));
+
+        javax.swing.GroupLayout pnlListaLayout = new javax.swing.GroupLayout(pnlLista);
+        pnlLista.setLayout(pnlListaLayout);
+        pnlListaLayout.setHorizontalGroup(
+            pnlListaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGap(0, 840, Short.MAX_VALUE)
+        );
+        pnlListaLayout.setVerticalGroup(
+            pnlListaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGap(0, 400, Short.MAX_VALUE)
+        );
+
+        scrollTarjetas.setViewportView(pnlLista);
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
+        this.setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createSequentialGroup()
+                    .addGap(26, 26, 26)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createSequentialGroup()
+                            .addComponent(lblTitulo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGap(0, 20, Short.MAX_VALUE)
+                            .addComponent(lblResultado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(layout.createSequentialGroup()
+                            .addComponent(lblBuscar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(txtBuscar, javax.swing.GroupLayout.DEFAULT_SIZE, 200, Short.MAX_VALUE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(cmbCategoria, javax.swing.GroupLayout.PREFERRED_SIZE, 170, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(cmbLugar, javax.swing.GroupLayout.PREFERRED_SIZE, 170, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(cmbEstado, javax.swing.GroupLayout.PREFERRED_SIZE, 160, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(layout.createSequentialGroup()
+                            .addComponent(chkFechas, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(lblDesde, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(spnDesde, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(lblHasta, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(spnHasta, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGap(14, 14, 14)
+                            .addComponent(btnBuscar, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(btnLimpiar, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGap(0, 0, Short.MAX_VALUE))
+                        .addComponent(scrollTarjetas, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGap(26, 26, 26))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(layout.createSequentialGroup()
+                    .addGap(22, 22, 22)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(lblTitulo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lblResultado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGap(12, 12, 12)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(lblBuscar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(txtBuscar, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(cmbCategoria, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(cmbLugar, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(cmbEstado, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGap(10, 10, 10)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(chkFechas, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lblDesde, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(spnDesde, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(lblHasta, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(spnHasta, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(btnBuscar, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(btnLimpiar, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGap(14, 14, 14)
+                    .addComponent(scrollTarjetas, javax.swing.GroupLayout.DEFAULT_SIZE, 420, Short.MAX_VALUE)
+                    .addGap(18, 18, 18))
+        );
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void txtBuscarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtBuscarActionPerformed
+        buscar();
+    }//GEN-LAST:event_txtBuscarActionPerformed
+
+    private void chkFechasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chkFechasActionPerformed
+        activarFechas();
+    }//GEN-LAST:event_chkFechasActionPerformed
+
+    private void btnBuscarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBuscarActionPerformed
+        buscar();
+    }//GEN-LAST:event_btnBuscarActionPerformed
+
+    private void btnLimpiarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimpiarActionPerformed
+        limpiarFiltros();
+    }//GEN-LAST:event_btnLimpiarActionPerformed
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnBuscar;
+    private javax.swing.JButton btnLimpiar;
+    private javax.swing.JCheckBox chkFechas;
+    private javax.swing.JComboBox<Object> cmbCategoria;
+    private javax.swing.JComboBox<Object> cmbEstado;
+    private javax.swing.JComboBox<Object> cmbLugar;
+    private javax.swing.JLabel lblBuscar;
+    private javax.swing.JLabel lblDesde;
+    private javax.swing.JLabel lblHasta;
+    private javax.swing.JLabel lblResultado;
+    private javax.swing.JLabel lblTitulo;
+    private javax.swing.JPanel pnlLista;
+    private javax.swing.JScrollPane scrollTarjetas;
+    private javax.swing.JSpinner spnDesde;
+    private javax.swing.JSpinner spnHasta;
+    private javax.swing.JTextField txtBuscar;
+    // End of variables declaration//GEN-END:variables
 }

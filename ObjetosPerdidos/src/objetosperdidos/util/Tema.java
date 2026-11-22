@@ -73,6 +73,50 @@ public class Tema {
         UIManager.put("OptionPane.buttonFont", FUENTE);
     }
 
+    /**
+     * Da a un JButton creado en el diseñador de NetBeans el mismo aspecto redondeado de los
+     * demás botones. Respeta el color de fondo y de texto que se configuren en el diseñador.
+     */
+    public static void estilizarBoton(JButton boton) {
+        estilizarBoton(boton, true);
+    }
+
+    /** Botón de menú lateral: fondo plano, sin contorno y con el texto separado del borde. */
+    public static void estilizarBotonMenu(JButton boton) {
+        estilizarBoton(boton, false);
+        boton.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
+    }
+
+    private static void estilizarBoton(JButton boton, boolean conContorno) {
+        boton.setUI(new javax.swing.plaf.basic.BasicButtonUI() {
+            @Override
+            public void paint(Graphics g, javax.swing.JComponent componente) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                JButton b = (JButton) componente;
+                Color fondo = b.getBackground();
+                if (!b.isEnabled()) {
+                    fondo = BORDE;
+                } else if (b.getModel().isPressed()) {
+                    fondo = fondo.darker();
+                }
+                g2.setColor(fondo);
+                g2.fillRoundRect(0, 0, b.getWidth(), b.getHeight(), 8, 8);
+                if (conContorno) {
+                    g2.setColor(BORDE);
+                    g2.drawRoundRect(0, 0, b.getWidth() - 1, b.getHeight() - 1, 8, 8);
+                }
+                g2.dispose();
+                super.paint(g, componente); // dibuja el texto
+            }
+        });
+        boton.setContentAreaFilled(false);
+        boton.setBorderPainted(false);
+        boton.setFocusPainted(false);
+        boton.setOpaque(false);
+        boton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    }
+
     /** Botón de la acción principal (azul). */
     public static JButton botonPrimario(String texto) {
         return new Boton(texto, AZUL, BLANCO, false);

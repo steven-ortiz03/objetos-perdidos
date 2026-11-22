@@ -14,8 +14,8 @@ INSERT INTO lugares (nombre) VALUES
     ('Biblioteca'), ('Auditorio'), ('Coordinación'),
     ('Bienestar Institucional'), ('Admisiones');
 
-INSERT INTO usuarios (nombre, correo, codigo_institucional, password_hash, salt, rol) VALUES
-    ('Administrador', 'admin@iusai.edu.co', 'ADM-0001',
+INSERT INTO usuarios (nombre, correo, cedula, password_hash, salt, rol) VALUES
+    ('Administrador', 'admin@iusai.edu.co', '1000000001',
      'X8vUiWtHHx+d990eTCSkxvZTNwbouYuIIqOA90x80FQ=', 'SnHmHB5aj4WC5YAAo/Hhhg==', 'ADMINISTRADOR'),
-    ('Estudiante', 'estudiante@iusai.edu.co', 'EST-0001',
+    ('Estudiante', 'estudiante@iusai.edu.co', '1000000002',
      'deuV6ZFZ0wffUh0XWDZOrTF9JNt0KrB7jYZ+iyGr10k=', '1avraQvTx4g/McozDne3BQ==', 'ESTUDIANTE');

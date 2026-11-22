@@ -15,7 +15,7 @@ public class UsuarioDAO {
 
     /** Busca un usuario por su correo. Devuelve null si no existe. */
     public Usuario buscarPorCorreo(String correo) throws SQLException {
-        String sql = "SELECT id_usuario, nombre, correo, codigo_institucional, password_hash, salt, rol, activo "
+        String sql = "SELECT id_usuario, nombre, correo, cedula, password_hash, salt, rol, activo "
                 + "FROM usuarios WHERE correo = ?";
         try (Connection conexion = ConexionBD.getConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
@@ -29,12 +29,12 @@ public class UsuarioDAO {
         }
     }
 
-    /** Indica si ya existe una cuenta con ese código institucional (es único). */
-    public boolean existeCodigo(String codigo) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM usuarios WHERE LOWER(codigo_institucional) = LOWER(?)";
+    /** Indica si ya existe una cuenta con ese cédula (es única). */
+    public boolean existeCedula(String cedula) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM usuarios WHERE LOWER(cedula) = LOWER(?)";
         try (Connection conexion = ConexionBD.getConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
-            sentencia.setString(1, codigo);
+            sentencia.setString(1, cedula);
             try (ResultSet resultado = sentencia.executeQuery()) {
                 resultado.next();
                 return resultado.getInt(1) > 0;
@@ -44,13 +44,13 @@ public class UsuarioDAO {
 
     /** Guarda un usuario nuevo. El rol sale del tipo de objeto recibido. */
     public void insertar(Usuario usuario) throws SQLException {
-        String sql = "INSERT INTO usuarios (nombre, correo, codigo_institucional, password_hash, salt, rol) "
+        String sql = "INSERT INTO usuarios (nombre, correo, cedula, password_hash, salt, rol) "
                 + "VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conexion = ConexionBD.getConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
             sentencia.setString(1, usuario.getNombre());
             sentencia.setString(2, usuario.getCorreo());
-            sentencia.setString(3, usuario.getCodigoInstitucional());
+            sentencia.setString(3, usuario.getCedula());
             sentencia.setString(4, usuario.getPasswordHash());
             sentencia.setString(5, usuario.getSalt());
             sentencia.setString(6, usuario.getRol().name());
@@ -70,7 +70,7 @@ public class UsuarioDAO {
         usuario.setId(fila.getInt("id_usuario"));
         usuario.setNombre(fila.getString("nombre"));
         usuario.setCorreo(fila.getString("correo"));
-        usuario.setCodigoInstitucional(fila.getString("codigo_institucional"));
+        usuario.setCedula(fila.getString("cedula"));
         usuario.setPasswordHash(fila.getString("password_hash"));
         usuario.setSalt(fila.getString("salt"));
         usuario.setActivo(fila.getInt("activo") == 1);

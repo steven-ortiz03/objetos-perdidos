@@ -34,16 +34,19 @@ public class AuthController {
     }
 
     /** CU-02: registra una cuenta nueva, siempre con rol estudiante (RF-02). */
-    public void registrarEstudiante(String nombre, String codigo, String correo,
+    public void registrarEstudiante(String nombre, String cedula, String correo,
                                     String password, String confirmacion)
             throws ValidacionException, SQLException {
         Validador.exigir(nombre, "Nombre completo");
-        Validador.exigir(codigo, "Código institucional");
+        Validador.exigir(cedula, "Cédula");
         Validador.exigir(correo, "Correo");
         Validador.exigir(password, "Contraseña");
         Validador.exigirMaximo(nombre, 100, "Nombre completo");
-        Validador.exigirMaximo(codigo, 30, "Código institucional");
-        Validador.exigirMaximo(correo, 120, "Correo");
+                Validador.exigirMaximo(correo, 120, "Correo");
+
+        if (!Validador.esCedulaValida(cedula.trim())) {
+            throw new ValidacionException("La cédula debe tener solo números (entre 6 y 10 dígitos).");
+        }
 
         String correoLimpio = correo.trim().toLowerCase();
         if (!Validador.esCorreoValido(correoLimpio)) {
@@ -58,13 +61,13 @@ public class AuthController {
         if (usuarioDAO.buscarPorCorreo(correoLimpio) != null) {
             throw new ValidacionException("Ya existe una cuenta registrada con ese correo.");
         }
-        if (usuarioDAO.existeCodigo(codigo.trim())) {
-            throw new ValidacionException("Ya existe una cuenta registrada con ese código institucional.");
+        if (usuarioDAO.existeCedula(cedula.trim())) {
+            throw new ValidacionException("Ya existe una cuenta registrada con esa cédula.");
         }
 
         Estudiante estudiante = new Estudiante();
         estudiante.setNombre(nombre.trim());
-        estudiante.setCodigoInstitucional(codigo.trim());
+        estudiante.setCedula(cedula.trim());
         estudiante.setCorreo(correoLimpio);
         String salt = PasswordUtil.generarSalt();
         estudiante.setSalt(salt);
